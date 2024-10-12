@@ -2,9 +2,27 @@
 import sqlite3
 import argparse
 import os
+import json
 from datetime import datetime
+import sys
+from pathlib import Path
 
-DB_FILE = os.path.expanduser("./.todo.db")
+# New function to load config
+def load_config():
+    config_path = Path.cwd() / '.todo_config.json'
+    default_config = {
+        'db_file': str(Path.cwd() / '.todo.db')
+    }
+    
+    if config_path.exists():
+        with open(config_path, 'r') as f:
+            return {**default_config, **json.load(f)}
+    else:
+        return default_config
+
+# Load config at the start
+config = load_config()
+DB_FILE = config['db_file']
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
@@ -14,6 +32,7 @@ def init_db():
                   title TEXT NOT NULL,
                   completed INTEGER DEFAULT 0,
                   created_at TEXT NOT NULL,
+                  updated_at TEXT NOT NULL,
                   tags TEXT)''')
     conn.commit()
     conn.close()
@@ -21,9 +40,9 @@ def init_db():
 def add_task(title, tags=None):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    created_at = datetime.now().isoformat()
-    c.execute("INSERT INTO tasks (title, created_at, tags) VALUES (?, ?, ?)",
-              (title, created_at, ','.join(tags) if tags else None))
+    now = datetime.now().isoformat()
+    c.execute("INSERT INTO tasks (title, created_at, updated_at, tags) VALUES (?, ?, ?, ?)",
+              (title, now, now, ','.join(tags) if tags else None))
     conn.commit()
     print(f"Task added: {title}")
     conn.close()
@@ -44,8 +63,10 @@ def list_tasks(completed=None, tags=None):
     tasks = c.fetchall()
     for task in tasks:
         status = "[x]" if task[2] else "[ ]"
-        tags = f" (tags: {task[4]})" if task[4] else ""
-        print(f"{task[0]}. {status} {task[1]}{tags}")
+        tags = f" (tags: {task[5]})" if task[5] else ""
+        created = datetime.fromisoformat(task[3]).strftime("%Y-%m-%d %H:%M")
+        updated = datetime.fromisoformat(task[4]).strftime("%Y-%m-%d %H:%M")
+        print(f"{task[0]}. {status} {task[1]}{tags} (Created: {created}, Updated: {updated})")
     conn.close()
 
 def delete_task(task_id):
@@ -62,7 +83,8 @@ def delete_task(task_id):
 def complete_task(task_id):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute("UPDATE tasks SET completed = 1 WHERE id = ?", (task_id,))
+    now = datetime.now().isoformat()
+    c.execute("UPDATE tasks SET completed = 1, updated_at = ? WHERE id = ?", (now, task_id))
     if c.rowcount > 0:
         print(f"Task {task_id} marked as completed.")
     else:
@@ -73,11 +95,12 @@ def complete_task(task_id):
 def edit_task(task_id, new_title, new_tags=None):
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
+    now = datetime.now().isoformat()
     if new_tags is not None:
-        c.execute("UPDATE tasks SET title = ?, tags = ? WHERE id = ?",
-                  (new_title, ','.join(new_tags), task_id))
+        c.execute("UPDATE tasks SET title = ?, tags = ?, updated_at = ? WHERE id = ?",
+                  (new_title, ','.join(new_tags), now, task_id))
     else:
-        c.execute("UPDATE tasks SET title = ? WHERE id = ?", (new_title, task_id))
+        c.execute("UPDATE tasks SET title = ?, updated_at = ? WHERE id = ?", (new_title, now, task_id))
     if c.rowcount > 0:
         print(f"Task {task_id} updated.")
     else:
@@ -93,7 +116,7 @@ def search_tasks(query):
     tasks = c.fetchall()
     for task in tasks:
         status = "[x]" if task[2] else "[ ]"
-        tags = f" (tags: {task[4]})" if task[4] else ""
+        tags = f" (tags: {task[5]})" if task[5] else ""
         print(f"{task[0]}. {status} {task[1]}{tags}")
     conn.close()
 
@@ -139,7 +162,26 @@ def main():
 
     subparsers.add_parser("tags", help="List all tags")
 
+    # Add a new subparser for the config command
+    config_parser = subparsers.add_parser("config", help="Manage configuration")
+    config_parser.add_argument("--show", action="store_true", help="Show current configuration")
+    config_parser.add_argument("--set", nargs=2, metavar=('KEY', 'VALUE'), help="Set a configuration value")
+
     args = parser.parse_args()
+
+    if args.command == "config":
+        if args.show:
+            print(json.dumps(config, indent=2))
+        elif args.set:
+            key, value = args.set
+            if key in config:
+                config[key] = value
+                with open(Path.home() / '.todo_config.json', 'w') as f:
+                    json.dump(config, f, indent=2)
+                print(f"Configuration updated: {key} = {value}")
+            else:
+                print(f"Invalid configuration key: {key}")
+        sys.exit(0)
 
     init_db()
 
@@ -161,4 +203,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

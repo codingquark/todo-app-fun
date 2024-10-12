@@ -1,6 +1,6 @@
 # POSIX-Compliant CLI Todo App
 
-A simple, ~~yet powerful~~ command-line interface (CLI) todo application that is POSIX-compliant. This app allows you to manage your tasks efficiently from the terminal.
+A simple command-line interface (CLI) todo application that is POSIX-compliant. This app allows you to manage your tasks efficiently from the terminal.
 
 ## Features
 
@@ -11,11 +11,31 @@ A simple, ~~yet powerful~~ command-line interface (CLI) todo application that is
 - [x] Edit task titles and tags
 - [x] Search tasks by title or tags
 - [x] List all tags used in tasks
+- [x] Configurable database location
+- [x] Automatic tracking of creation and update dates
 - [ ] Notifications (coming soon)
 
 ## Storage
 
-Tasks are stored in a local SQLite database (`~/.todo.db`), ensuring data persistence and quick access.
+Tasks are stored in a local SQLite database. The default location is `~/.todo.db`, but this can be configured. Each task includes:
+- Title
+- Completion status
+- Creation date
+- Last update date
+- Tags (optional)
+
+## Configuration
+
+The app uses a configuration file located at `~/.todo_config.json`. You can view and modify the configuration using the `config` command:
+
+- View current configuration:
+  ```
+  ./todo.py config --show
+  ```
+- Set a configuration value:
+  ```
+  ./todo.py config --set db_file /path/to/your/database.db
+  ```
 
 ## Installation
 
@@ -45,6 +65,7 @@ Run `./todo.py` (or just `todo` if you created a symlink) followed by a command:
 - `edit`: Edit a task's title or tags
 - `search`: Search for tasks
 - `tags`: List all tags
+- `config`: Manage configuration
 
 For detailed help on each command, use:
 ```
@@ -86,4 +107,9 @@ For detailed help on each command, use:
 7. List all tags:
    ```
    ./todo.py tags
+   ```
+
+8. Change the database location:
+   ```
+   ./todo.py config --set db_file /path/to/your/database.db
    ```
