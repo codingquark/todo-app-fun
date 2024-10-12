@@ -87,11 +87,3 @@ For detailed help on each command, use:
    ```
    ./todo.py tags
    ```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-GPLv3
