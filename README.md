@@ -55,7 +55,7 @@ For detailed help on each command, use:
 
 1. Add a task:
    ```
-   ./todo.py add "Buy groceries" --tags shopping food
+   ./todo.py add "Buy groceries" --tags shopping,food
    ```
 
 2. List all tasks:
@@ -75,7 +75,7 @@ For detailed help on each command, use:
 
 5. Edit a task:
    ```
-   ./todo.py edit 2 "Buy organic groceries" --tags shopping organic
+   ./todo.py edit 2 "Buy organic groceries" --tags shopping,organic
    ```
 
 6. Search for tasks:
